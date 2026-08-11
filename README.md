@@ -7,12 +7,6 @@ Charla hecha en manim
 - Python ≥ 3.13 (ver [.python-version](.python-version))
 - [uv](https://docs.astral.sh/uv/) para gestionar el entorno y las dependencias
 
-## Puesta en marcha
-
-```bash
-uv sync
-```
-
 ## Uso
 
 ```bash
