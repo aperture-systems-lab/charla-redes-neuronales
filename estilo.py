@@ -39,4 +39,4 @@ RAIZ = os.path.dirname(os.path.abspath(__file__))
 ASSETS = os.path.join(RAIZ, "assets")  # imágenes de marca (.png, logos, iconos)
 
 # --- Constantes de layout ------------------------------------------------
-TAM_TITULO = 24          # tamaño del título de diapositiva (en FONT_TITULO)
+TAM_TITULO = 30          # tamaño del título de diapositiva (en FONT_TITULO)
