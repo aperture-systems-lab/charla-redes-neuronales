@@ -1,0 +1,11 @@
+[project]
+name = "como-funcionan-las-redes-neuronales"
+version = "0.1.0"
+description = "Charla del Semillero Aperture: cómo funcionan las redes neuronales — presentación animada con Manim Slides."
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "manim>=0.18",
+    "manim-slides[pyqt6]>=5.1",
+    "numpy>=1.26",
+]

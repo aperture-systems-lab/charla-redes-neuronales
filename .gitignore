@@ -1,0 +1,17 @@
+# Salida generada por Manim / manim-slides
+media/
+slides/
+
+# Exportaciones de la presentación (uv run manim-slides convert …)
+/*.pptx
+/*.html
+/*.mp4
+
+# Python
+__pycache__/
+*.pyc
+
+# Entornos
+.venv/
+.uv/
+.claude/
