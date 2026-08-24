@@ -599,7 +599,13 @@ def construir(scene):
     # Un rótulo por tramo y una oleada por tramo: se encienden en el mismo
     # orden en que el gradiente los alcanza, de la salida hacia la entrada.
     al_reves = list(gradientes)[::-1]
-    scene.next_slide(loop=True)
+    # El armado desemboca directo en el bucle, sin clic intermedio: marcamos
+    # con ``auto_next`` la diapositiva del armado —la que sigue abierta hasta
+    # este ``next_slide``— para que manim-slides encadene sola con el bucle.
+    # Y sin indicador, que si no el logo parpadearía justo antes de entrar.
+    if hasattr(scene, "_base_slide_config"):
+        scene._base_slide_config.auto_next = True
+    scene.next_slide(loop=True, indicador=False)
     # Las cuatro gráficas se mueven con la oleada de ida, escalonadas de
     # izquierda a derecha: viven en su propia banda, así que no compiten con
     # la red, y el ojo puede recorrerlas mientras la señal cruza arriba.

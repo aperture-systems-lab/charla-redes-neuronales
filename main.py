@@ -41,6 +41,7 @@ class presentation(
         self.slide_pronto_iniciamos()
         self.slide_portada()
         self.slide_porque_importan()
+        
         self.slide_como_aprendemos()
         self.slide_idea_vieja()
         self.slide_neurona_biologica()

@@ -22,6 +22,7 @@ from manim import (
     Flash,
     Group,
     GrowFromCenter,
+    Indicate,
     LaggedStart,
     Line,
     MoveAlongPath,
@@ -201,5 +202,49 @@ def construir(scene):
         run_time=0.6,
     )
     scene.wait(0.4)
+
+    scene.next_slide()
+
+    # --- El cómputo de un LLM es, casi todo, una red feed-forward -----------
+    # Remate del "por qué importan": en los modelos de lenguaje, la mayor parte
+    # del cómputo —la columna FFN de esta tabla, que trepa del 44% al 80%
+    # conforme el modelo crece— es una red feed-forward, la misma pieza que la
+    # charla desarma después. Se retira todo lo anterior —diagrama y encabezado—
+    # y se resalta esa columna para que el dato no pase de largo.
+    diagrama = Group(pregunta, rotulos, contenido, caja_negra, conexiones, *tarjetas)
+    scene.play(FadeOut(diagrama), run_time=0.5)
+
+    tabla = imagen("computo_transformer.jpg").scale_to_fit_width(9.5)
+    tabla.move_to([0, 0.1, 0])
+    marco_tabla = enmarcar(tabla, margen=0.16)
+    scene.play(FadeIn(tabla), Create(marco_tabla), run_time=0.7)
+    scene.wait(0.5)
+
+    # La columna "% FLOPS FFN" ocupa la fracción [0.633, 0.760] del ancho de la
+    # imagen (medido sobre el propio asset): de ahí salen sus bordes en
+    # coordenadas de escena, sin números mágicos si cambia la escala de la tabla.
+    F0, F1 = 0.633, 0.760
+    izq = tabla.get_left()[0]
+    x0, x1 = izq + F0 * tabla.width, izq + F1 * tabla.width
+    resalte = RoundedRectangle(
+        width=x1 - x0, height=tabla.height + 0.04, corner_radius=0.08,
+        stroke_color=MORADO, stroke_width=4,
+        fill_color=MORADO, fill_opacity=0.14,
+    ).move_to([(x0 + x1) / 2, tabla.get_center()[1], 0])
+
+    # Debajo de la tabla, el crédito de la fuente (en gris, discreto).
+    fuente = texto(
+        "Fuente: Stephen Roller, ex Senior Staff Research Scientist "
+        "en Google DeepMind",
+        15, color=SECUNDARIO,
+    )
+    if fuente.width > 12.6:
+        fuente.scale(12.6 / fuente.width)
+    fuente.next_to(marco_tabla, DOWN, buff=0.3)
+
+    scene.play(Create(resalte), run_time=0.5)
+    scene.play(Indicate(resalte, color=MORADO, scale_factor=1.06), run_time=0.6)
+    scene.play(FadeIn(fuente, shift=UP * 0.1), run_time=0.4)
+    scene.wait(0.3)
 
     scene.next_slide()
