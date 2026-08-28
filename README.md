@@ -4,7 +4,7 @@ Charla hecha en manim
 
 ## Requisitos
 
-- Python ≥ 3.13 (ver [.python-version](.python-version))
+- Python 
 - [uv](https://docs.astral.sh/uv/) para gestionar el entorno y las dependencias
 - [VS Code](https://code.visualstudio.com/) con la extensión de Python, para abrir los cuadernos
 
