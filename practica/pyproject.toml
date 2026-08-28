@@ -1,0 +1,11 @@
+[project]
+name = "charla-redes-neuronales-practica"
+version = "0.1.0"
+description = "Parte práctica de la charla: una red neuronal a mano, paso a paso."
+requires-python = ">=3.13"
+dependencies = [
+    "numpy>=1.26",
+    "matplotlib>=3.9",
+    "torch>=2.4",
+    "ipykernel>=6.29",
+]

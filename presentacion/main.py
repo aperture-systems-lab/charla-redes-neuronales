@@ -5,7 +5,7 @@ los helpers de animación en ``animaciones.py`` y cada diapositiva en su archivo
 dentro de ``diapositivas/``. Las diapositivas se agrupan en mixins temáticos
 (``Slides*``) que aportan los métodos ``slide_*`` invocados desde ``construct``.
 
-Desde la raíz del repositorio:
+Desde ``presentacion/``:
 
     Renderizar:   uv run python -m manim_slides render main.py presentation
     Presentar:    uv run python -m manim_slides present presentation

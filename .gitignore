@@ -2,10 +2,10 @@
 media/
 slides/
 
-# Exportaciones de la presentación (uv run manim-slides convert …)
-/*.pptx
-/*.html
-/*.mp4
+# Exportaciones de la presentación (uv run manim-slides convert …), en cualquier carpeta
+*.pptx
+*.html
+*.mp4
 
 # Python
 __pycache__/
@@ -15,3 +15,5 @@ __pycache__/
 .venv/
 .uv/
 .claude/
+# Pesos que generan los cuadernos
+practica/datos/*.pt
