@@ -8,3 +8,11 @@ dependencies = [
     "manim-slides[pyqt6]>=5.1",
     "numpy>=1.26",
 ]
+
+[tool.uv]
+# Smart App Control de Windows bloquea binarios de av 18.1.0 y scipy 1.18.1
+# ("An Application Control policy has blocked this file"); las versiones previas cargan bien.
+constraint-dependencies = [
+    "av<18.1",
+    "scipy<1.18.1",
+]

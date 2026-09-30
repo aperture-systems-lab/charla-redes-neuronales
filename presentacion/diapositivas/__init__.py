@@ -23,6 +23,7 @@ from . import (
     funcion_activacion,
     idea_vieja,
     la_recta,
+    material_extra,
     neurona_biologica,
     perdida_clasificacion,
     perdida_regresion,
@@ -120,4 +121,5 @@ class SlidesCuerpo:
 class SlidesFinal:
     slide_siguientes_pasos = _slide(siguientes_pasos.construir)
     slide_frameworks = _slide(frameworks.construir)
+    slide_material_extra = _slide(material_extra.construir)
     slide_cierre = _slide(cierre.construir)

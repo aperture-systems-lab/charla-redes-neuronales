@@ -21,3 +21,8 @@ practica/datos/*.pt
 # Fotos que descarga el cuaderno 03 (261 MB)
 practica/data/hotdog/
 practica/data/hotdog.zip
+
+# Playground: clave de Gemini y modelos descargados
+.env
+playground/.cache/
+!playground/frontend/*.html

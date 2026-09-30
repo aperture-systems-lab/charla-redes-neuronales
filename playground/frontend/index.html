@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>aperture // playground</title>
+  <link rel="icon" type="image/png" href="assets/aperture-eye-cyan.png">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="estilos.css?v=1">
+  <script type="module" src="js/ambiente.js?v=1"></script>
+  <script type="module" src="js/pestanas.js?v=1"></script>
+  <script type="module" src="js/fronteras.js?v=1"></script>
+  <script type="module" src="js/vision.js?v=1"></script>
+  <script type="module" src="js/dibujo.js?v=1"></script>
+</head>
+
+<body>
+
+<canvas id="lluvia" aria-hidden="true"></canvas>
+<div class="crt-lineas" aria-hidden="true"></div>
+<div class="crt-vineta" aria-hidden="true"></div>
+
+<div class="envoltura">
+
+  <header>
+    <div class="linea-cmd">
+      <span class="prompt"><span class="usuario">aperture@lab</span>:<span class="ruta">~/redes-neuronales</span>$</span>
+      ./playground.sh<span class="cursor" aria-hidden="true"></span>
+    </div>
+
+    <h1>APERTURE <span class="barra">//</span> PLAYGROUND</h1>
+  </header>
+
+  <nav class="pestanas" role="tablist" aria-label="Secciones del playground">
+    <button type="button" role="tab" id="tab-fronteras"
+            aria-controls="vista-fronteras" aria-selected="true">
+      <i>01</i> fronteras de decisión
+    </button>
+    <button type="button" role="tab" id="tab-vision"
+            aria-controls="vista-vision" aria-selected="false" tabindex="-1">
+      <i>02</i> visión en vivo
+    </button>
+    <button type="button" role="tab" id="tab-lenguaje"
+            aria-controls="vista-lenguaje" aria-selected="false" tabindex="-1">
+      <i>03</i> gemini dibuja
+    </button>
+  </nav>
+
+  <!-- ─────────────────────────── 01 · fronteras ─────────────────────────── -->
+
+  <section id="vista-fronteras" class="vista" role="tabpanel" aria-labelledby="tab-fronteras">
+
+    <div class="columnas columnas-fronteras">
+
+      <div class="opciones">
+
+        <section class="panel">
+          <div class="cabecera">
+            <span class="prompt">$</span> ./datos --forma <b id="fFormaActual">espiral</b>
+          </div>
+          <div class="cuerpo">
+            <div class="chips" id="fFormas" role="group" aria-label="Forma de los datos"></div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="cabecera">
+            <span class="prompt">$</span> ./modelo --entrenar
+          </div>
+          <div class="cuerpo">
+            <ul class="redes" id="fModelos" aria-label="Modelo que se dibuja en el plano">
+              <li>
+                <button type="button" class="red-boton" data-modelo="logistica" aria-pressed="false">
+                  <span class="icono" aria-hidden="true">1</span>
+                  <b>regresión logística</b>
+                  <small>una sola recta</small>
+                  <span class="estado acierto">—</span>
+                </button>
+              </li>
+              <li>
+                <button type="button" class="red-boton" data-modelo="arbol" aria-pressed="false">
+                  <span class="icono" aria-hidden="true">2</span>
+                  <b>árbol de decisión</b>
+                  <small>preguntas sí / no</small>
+                  <span class="estado acierto">—</span>
+                </button>
+              </li>
+              <li>
+                <button type="button" class="red-boton" data-modelo="red" aria-pressed="true">
+                  <span class="icono" aria-hidden="true">3</span>
+                  <b>red neuronal</b>
+                  <small>capas + activación</small>
+                  <span class="estado acierto">—</span>
+                </button>
+              </li>
+            </ul>
+
+            <div class="controles" data-controles="logistica" hidden>
+              <div class="control">
+                <span>fórmula</span>
+                <code class="formula">sigmoide(w₁·x + w₂·y + b)</code>
+              </div>
+              <div class="control">
+                <span>parámetros</span>
+                <output data-m="parametros-logistica">—</output>
+              </div>
+            </div>
+
+            <div class="controles" data-controles="arbol" hidden>
+              <div class="control">
+                <span>profundidad máxima</span>
+                <output data-m="profundidad-max">—</output>
+              </div>
+            </div>
+
+            <div class="controles" data-controles="red">
+              <div class="control">
+                <span>parámetros</span>
+                <output data-m="parametros-red">—</output>
+              </div>
+              <div class="control">
+                <span>capas ocultas</span>
+                <output data-m="capas">—</output>
+              </div>
+              <div class="control">
+                <span>neuronas por capa</span>
+                <output data-m="neuronas">—</output>
+              </div>
+              <div class="control">
+                <span>activación</span>
+                <output data-m="activacion">—</output>
+              </div>
+            </div>
+
+            <div class="metricas">
+              <div class="metrica"><span id="fEtiqueta1">acierto</span><strong id="fValor1">—</strong></div>
+              <div class="metrica"><span id="fEtiqueta2">pérdida</span><strong id="fValor2">—</strong></div>
+              <div class="metrica"><span id="fEtiqueta3">época</span><strong id="fValor3">—</strong></div>
+            </div>
+
+            <p class="nota" id="fNota"></p>
+
+            <div class="fila">
+              <button type="button" id="fEntrenar" class="primario">❚❚ pausar</button>
+              <button type="button" id="fReiniciar">↺ reiniciar pesos</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <section class="panel">
+        <div class="cabecera">
+          <span class="prompt">$</span> ./plano --modelo <b id="fModeloActual">red_neuronal</b>
+          <span class="cabecera-dato" id="fEstadoPlano">entrenando</span>
+        </div>
+        <div class="cuerpo">
+          <div class="plano"><canvas id="fPlano" aria-label="Plano con los datos y la frontera del modelo elegido"></canvas></div>
+        </div>
+      </section>
+
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── 02 · visión ─────────────────────────── -->
+
+  <section id="vista-vision" class="vista" role="tabpanel" aria-labelledby="tab-vision" hidden>
+
+    <div class="columnas columnas-vision">
+
+      <section class="panel">
+        <div class="cabecera">
+          <span class="prompt">$</span> ./camara --en-vivo
+          <span class="cabecera-dato" id="vEstado">apagada</span>
+        </div>
+        <div class="cuerpo">
+          <div class="escenario esquinas" id="vEscenario">
+            <i class="esq tl"></i><i class="esq tr"></i>
+            <i class="esq bl"></i><i class="esq br"></i>
+
+            <canvas id="vLienzo" aria-label="Imagen de la cámara con lo que ven las redes"></canvas>
+
+            <div class="escenario-apagado" id="vApagado">
+              <canvas class="malla malla-caja" data-alcance="140" data-densidad="15000" aria-hidden="true"></canvas>
+              <h3 class="lobby-titulo">REDES<br><span>CONVOLUCIONALES</span></h3>
+              <button type="button" id="vEncender" class="grande">▸ ENCENDER CÁMARA</button>
+              <p class="escenario-nota">todo corre en este computador: la imagen no sale de aquí.</p>
+            </div>
+          </div>
+
+          <div class="fila">
+            <select id="vCamaras" aria-label="Cámara" hidden></select>
+            <button type="button" id="vApagar" class="fantasma" disabled>■ apagar cámara</button>
+          </div>
+        </div>
+      </section>
+
+      <div>
+        <section class="panel">
+          <div class="cabecera"><span class="prompt">$</span> ./redes --activar</div>
+          <div class="cuerpo">
+            <ul class="redes" id="vRedes"></ul>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="cabecera"><span class="prompt">$</span> tail -f salida.log</div>
+          <div class="cuerpo salida">
+
+            <div class="bloque-salida" data-salida="clasificacion" hidden>
+              <p class="rotulo">clasificación · top 5</p>
+              <ol class="barras" id="vTop"></ol>
+            </div>
+
+            <div class="bloque-salida" data-salida="segmentacion" hidden>
+              <p class="rotulo">segmentación · % de la imagen</p>
+              <ul class="leyenda" id="vLeyenda"></ul>
+            </div>
+
+            <p class="vacio" id="vVacio">aquí escriben la clasificación y la segmentación.</p>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─────────────────────────── 03 · gemini dibuja ─────────────────────────── -->
+
+  <section id="vista-lenguaje" class="vista" role="tabpanel" aria-labelledby="tab-lenguaje" hidden>
+
+    <section class="panel">
+      <div class="cabecera">
+        <span class="prompt">$</span> ./dibujar --con gemini
+        <span class="cabecera-dato" id="dEstado">…</span>
+      </div>
+      <div class="cuerpo">
+        <form class="pedido" id="dFormulario">
+          <label for="dPedido" class="visualmente-oculto">qué quieres que dibuje</label>
+          <input type="text" id="dPedido" maxlength="300" autocomplete="off" spellcheck="false"
+                 placeholder="dibuja un gato astronauta flotando entre planetas">
+          <button type="submit" id="dDibujar" class="primario">▸ dibujar</button>
+        </form>
+
+        <div class="chips chips-mini ejemplos" id="dEjemplos"></div>
+
+        <div class="tu-mensaje" id="dMensaje" hidden>
+          <span class="rotulo">tu mensaje en tokens · <b id="dCuenta"></b></span>
+          <div class="tokens-pedido" id="dTokens"></div>
+        </div>
+
+        <div class="lienzo">
+          <iframe id="dMarco" title="Dibujo hecho por Gemini" sandbox="allow-scripts"></iframe>
+          <pre class="codigo-vivo" id="dCodigo" hidden></pre>
+        </div>
+
+        <div class="fila">
+          <p class="meta" id="dMeta"></p>
+          <button type="button" id="dVerCodigo" class="fantasma" disabled>ver el código</button>
+        </div>
+      </div>
+    </section>
+
+  </section>
+
+</div>
+</body>
+</html>

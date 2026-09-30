@@ -1,0 +1,12 @@
+[project]
+name = "charla-redes-neuronales-playground"
+version = "0.1.0"
+description = "Playground de la charla: fronteras de decisión, redes convolucionales en vivo y tokens con Gemini."
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "httpx>=0.27",
+    "python-dotenv>=1.0",
+    "tokenizers>=0.21",
+]
