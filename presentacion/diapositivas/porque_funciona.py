@@ -225,16 +225,15 @@ def construir(scene):
         entrada, salida, *neuronas, *cables, ejes, marcas, rot_x, rot_y,
         objetivo, datos, ajuste, contador, remate,
     )
-    scene.play(FadeOut(diagrama), run_time=0.8)
-    scene.play(FadeIn(teorema), Create(marco_teorema), run_time=0.7)
-    scene.wait(0.3)
-
-    scene.next_slide()
-
     asustado = imagen("asustado").scale_to_fit_height(ALTO_ASUSTADO)
     asustado.next_to(marco_teorema, DOWN, buff=-SOLAPE_ASUSTADO)
     asustado.align_to(marco_teorema, RIGHT).shift(LEFT * MARGEN_ASUSTADO)
-    scene.play(FadeIn(asustado, scale=0.5, shift=UP * 0.3), run_time=0.6)
+    scene.play(FadeOut(diagrama), run_time=0.8)
+    scene.play(
+        FadeIn(teorema), Create(marco_teorema),
+        FadeIn(asustado, scale=0.5, shift=UP * 0.3),
+        run_time=0.7,
+    )
     scene.wait(0.3)
 
     scene.next_slide()

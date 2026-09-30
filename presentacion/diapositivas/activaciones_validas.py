@@ -7,6 +7,7 @@ from manim import (
     Create,
     DashedLine,
     FadeIn,
+    FadeOut,
     Indicate,
     LaggedStart,
     MathTex,
@@ -15,9 +16,12 @@ from manim import (
     VMobject,
 )
 
-from componentes import aspa, texto, visto
+from componentes import aspa, enmarcar, imagen, texto, visto
 from componentes import titulo as hacer_titulo
 from estilo import PRIMARIO, ROJO, SECUNDARIO, VERDE
+
+ANCHO_BENEVOLENCIA = 11.0
+Y_BENEVOLENCIA = -0.4
 
 X_COLUMNA = 3.5
 Y_CABECERA = 1.05
@@ -130,5 +134,20 @@ def construir(scene):
     scene.play(Indicate(buenos[0], color=PRIMARIO, scale_factor=1.1),
                run_time=0.8)
     scene.wait(0.5)
+
+    scene.next_slide()
+
+    encabezado_elegir = hacer_titulo("Cómo elegir función de activación")
+    benevolencia = imagen("benevolencia")
+    benevolencia.scale_to_fit_width(ANCHO_BENEVOLENCIA)
+    benevolencia.move_to([0, Y_BENEVOLENCIA, 0])
+    marco_benevolencia = enmarcar(benevolencia, margen=0.16)
+    scene.play(
+        FadeOut(VGroup(divisoria, malos_cab, malos, buenos_cab, buenos)),
+        FadeOut(encabezado), FadeIn(encabezado_elegir, shift=DOWN * 0.2),
+        run_time=0.8,
+    )
+    scene.play(FadeIn(benevolencia), Create(marco_benevolencia), run_time=0.7)
+    scene.wait(0.3)
 
     scene.next_slide()
