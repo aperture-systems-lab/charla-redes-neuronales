@@ -29,8 +29,6 @@ uv run python -m backend.descargar                             # bajar los model
 uv run python -m uvicorn backend.main:app                      # abrir http://127.0.0.1:8000
 ```
 
-Dentro de VS Code se abre `00_inicio.ipynb` y se elige el kernel de `practica/.venv`.
-
 ## El playground
 
 Una web para jugar en vivo con los conceptos de redes neuronales. Necesita una clave de Gemini en `playground/.env`. Revisar la informaciòn que está en [`playground/README.md`](playground/README.md).
