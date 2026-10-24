@@ -16,7 +16,6 @@ from manim import (
     Indicate,
     LaggedStart,
     Line,
-    MoveAlongPath,
     Polygon,
     Succession,
     TracedPath,
@@ -28,6 +27,8 @@ from manim import (
     there_and_back,
 )
 
+from animaciones import impulsos_al_azar
+from componentes import pares_cercanos, puntos_separados
 from componentes import titulo as hacer_titulo
 from estilo import AMBAR, CLARO, FONDO, MORADO, PRIMARIO, SECUNDARIO, VERDE
 
@@ -196,41 +197,38 @@ def _haz(origen, radio_origen, destino, radio_destino):
     return VGroup(relleno, bordes)
 
 
+def _al_azar_en_disco(rng, centro, radio):
+    distancia = radio * np.sqrt(rng.random())
+    angulo = rng.uniform(0, 2 * PI)
+    return centro + np.array([distancia * np.cos(angulo),
+                              distancia * np.sin(angulo), 0.0])
+
+
+def _soma(rng, punto):
+    halo = Circle(radius=0.13, color=PRIMARIO, stroke_width=0)
+    halo.set_fill(PRIMARIO, opacity=0.13).move_to(punto)
+    muñones = VGroup(*[
+        Line(punto, punto + np.array([np.cos(a) * 0.17, np.sin(a) * 0.17, 0]),
+             color=PRIMARIO, stroke_width=2).set_stroke(opacity=0.55)
+        for a in rng.uniform(0, 2 * PI, 3)
+    ])
+    return VGroup(halo, muñones, Dot(punto, radius=0.055, color=PRIMARIO))
+
+
 def _tejido(centro, radio, cantidad=26, semilla=11):
     rng = np.random.default_rng(semilla)
-    util = radio - 0.4
-    puntos = []
-    for _ in range(6000):
-        if len(puntos) == cantidad:
-            break
-        distancia = util * np.sqrt(rng.random())
-        angulo = rng.uniform(0, 2 * PI)
-        punto = centro + np.array([distancia * np.cos(angulo),
-                                   distancia * np.sin(angulo), 0.0])
-        if all(np.linalg.norm(punto - otro) > 0.33 for otro in puntos):
-            puntos.append(punto)
+    puntos = puntos_separados(
+        lambda: _al_azar_en_disco(rng, centro, radio - 0.4),
+        cantidad, separacion=0.33, intentos=6000,
+    )
 
     conexiones = []
-    for i, uno in enumerate(puntos):
-        for otro in puntos[i + 1:]:
-            if np.linalg.norm(uno - otro) < 0.72:
-                medio = (uno + otro) / 2 + rng.uniform(-0.06, 0.06, 3) * [1, 1, 0]
-                conexiones.append(_curva([uno, medio, otro],
-                                         color=PRIMARIO, grosor=1.6))
-    for hilo in conexiones:
-        hilo.set_stroke(opacity=0.4)
+    for uno, otro in pares_cercanos(puntos, 0.72):
+        medio = (uno + otro) / 2 + rng.uniform(-0.06, 0.06, 3) * [1, 1, 0]
+        hilo = _curva([uno, medio, otro], color=PRIMARIO, grosor=1.6)
+        conexiones.append(hilo.set_stroke(opacity=0.4))
 
-    somas = VGroup()
-    for punto in puntos:
-        halo = Circle(radius=0.13, color=PRIMARIO, stroke_width=0)
-        halo.set_fill(PRIMARIO, opacity=0.13).move_to(punto)
-        muñones = VGroup(*[
-            Line(punto, punto + np.array([np.cos(a) * 0.17, np.sin(a) * 0.17, 0]),
-                 color=PRIMARIO, stroke_width=2).set_stroke(opacity=0.55)
-            for a in rng.uniform(0, 2 * PI, 3)
-        ])
-        somas.add(VGroup(halo, muñones, Dot(punto, radius=0.055, color=PRIMARIO)))
-
+    somas = VGroup(*[_soma(rng, punto) for punto in puntos])
     return VGroup(*conexiones), somas, conexiones
 
 
@@ -260,28 +258,7 @@ def _impulso(scene, figura):
                rate_func=there_and_back)
 
 
-def construir(scene):
-    encabezado = hacer_titulo("¿Cómo aprendemos nosotros?")
-
-    figura = _figura()
-    suelo = Line(
-        [X_FIG - 5.2, Y_SUELO, 0], [X_FIG + 5.2, Y_SUELO, 0],
-        color=SECUNDARIO, stroke_width=2, stroke_opacity=0.4,
-    )
-    diana = Circle(radius=0.22, color=SECUNDARIO, stroke_width=2.5)
-    diana.set_stroke(opacity=0.55).move_to(_mano(-1))
-    guia = DashedLine(
-        _mano(-1) + DOWN * 0.22, [_mano(-1)[0], Y_SUELO, 0],
-        color=SECUNDARIO, stroke_width=1.6, dash_length=0.07,
-    ).set_stroke(opacity=0.4)
-
-    bola = _bola(PRIMARIO, _mano(1))
-
-    scene.play(FadeIn(encabezado, shift=DOWN * 0.2), run_time=0.6)
-    scene.play(Create(figura), Create(suelo), run_time=1.2)
-    scene.play(GrowFromCenter(bola), FadeIn(diana), FadeIn(guia), run_time=0.5)
-    scene.next_slide()
-
+def _fallar(scene, figura, bola, diana):
     for intento, desvio in enumerate(DESVIOS):
         rastro = _rastro(bola, PRIMARIO)
         scene.add(rastro)
@@ -307,6 +284,8 @@ def construir(scene):
             FadeOut(error), run_time=0.6,
         )
 
+
+def _acertar(scene, figura, bola, diana, guia):
     rastro = _rastro(bola, PRIMARIO)
     scene.add(rastro)
     _impulso(scene, figura)
@@ -324,6 +303,24 @@ def construir(scene):
     )
     scene.next_slide()
 
+
+def _cascada(indice, bola, hueco, signo):
+    partes = [] if indice == 0 else [Wait(run_time=indice * INTERVALO)]
+    actual = hueco
+    espera = 3 * INTERVALO - VUELO
+    for ciclo in range(CICLOS):
+        signo *= -1
+        destino = _mano(signo) + np.array([(indice - 1) * 0.15, 0.07 - indice * 0.05, 0])
+        partes.append(_lanzamiento(
+            bola, actual, destino, CIMA_CASCADA + indice * 0.09, run_time=VUELO,
+        ))
+        actual = destino
+        if ciclo < CICLOS - 1:
+            partes.append(Wait(run_time=espera))
+    return Succession(*partes)
+
+
+def _malabares(scene, figura, bola):
     otras = VGroup(
         _bola(AMBAR, _mano(1) + np.array([0.19, -0.03, 0])),
         _bola(MORADO, _mano(-1) + np.array([-0.17, 0.03, 0])),
@@ -338,29 +335,20 @@ def construir(scene):
     huecos = [_mano(-1), _mano(1) + np.array([0.19, -0.03, 0]),
               _mano(-1) + np.array([-0.17, 0.03, 0])]
     signos = [-1, 1, -1]
-    espera = 3 * INTERVALO - VUELO
-
-    secuencias = []
-    for i, bola_i in enumerate(bolas):
-        partes = [] if i == 0 else [Wait(run_time=i * INTERVALO)]
-        actual, signo = huecos[i], signos[i]
-        for ciclo in range(CICLOS):
-            signo *= -1
-            destino = _mano(signo) + np.array([(i - 1) * 0.15, 0.07 - i * 0.05, 0])
-            partes.append(_lanzamiento(
-                bola_i, actual, destino, CIMA_CASCADA + i * 0.09, run_time=VUELO,
-            ))
-            actual = destino
-            if ciclo < CICLOS - 1:
-                partes.append(Wait(run_time=espera))
-        secuencias.append(Succession(*partes))
+    secuencias = [
+        _cascada(i, b, hueco, signo)
+        for i, (b, hueco, signo) in enumerate(zip(bolas, huecos, signos))
+    ]
 
     _impulso(scene, figura)
     scene.play(*secuencias)
     scene.wait(0.5)
     scene.remove(*rastros)
     scene.next_slide()
+    return bolas
 
+
+def _mirar_dentro(scene, bolas):
     centro_zoom = np.array([3.6, 0.85, 0.0])
     radio_zoom = 1.55
     cabeza = _escalar([X_FIG, Y_SUELO + 2.36, 0.0])
@@ -394,22 +382,36 @@ def construir(scene):
         LaggedStart(*[FadeIn(s, scale=0.4) for s in somas], lag_ratio=0.04),
         run_time=1.4,
     )
-
-    rng = np.random.default_rng(5)
-    for ronda in range(2):
-        elegidas = rng.choice(len(conexiones), size=9, replace=False)
-        impulsos = [
-            Dot(color=CLARO, radius=0.06).move_to(conexiones[k].get_start())
-            for k in elegidas
-        ]
-        scene.play(
-            LaggedStart(*[
-                MoveAlongPath(punto, conexiones[k], rate_func=linear)
-                for punto, k in zip(impulsos, elegidas)
-            ], lag_ratio=0.25),
-            run_time=1.5,
-        )
-        scene.play(*[FadeOut(p, scale=0.1) for p in impulsos], run_time=0.3)
+    impulsos_al_azar(scene, conexiones, semilla=5, cantidad=9, lag_ratio=0.25,
+                     run_time=1.5)
     scene.wait(0.4)
 
     scene.next_slide()
+
+
+def construir(scene):
+    encabezado = hacer_titulo("¿Cómo aprendemos nosotros?")
+
+    figura = _figura()
+    suelo = Line(
+        [X_FIG - 5.2, Y_SUELO, 0], [X_FIG + 5.2, Y_SUELO, 0],
+        color=SECUNDARIO, stroke_width=2, stroke_opacity=0.4,
+    )
+    diana = Circle(radius=0.22, color=SECUNDARIO, stroke_width=2.5)
+    diana.set_stroke(opacity=0.55).move_to(_mano(-1))
+    guia = DashedLine(
+        _mano(-1) + DOWN * 0.22, [_mano(-1)[0], Y_SUELO, 0],
+        color=SECUNDARIO, stroke_width=1.6, dash_length=0.07,
+    ).set_stroke(opacity=0.4)
+
+    bola = _bola(PRIMARIO, _mano(1))
+
+    scene.play(FadeIn(encabezado, shift=DOWN * 0.2), run_time=0.6)
+    scene.play(Create(figura), Create(suelo), run_time=1.2)
+    scene.play(GrowFromCenter(bola), FadeIn(diana), FadeIn(guia), run_time=0.5)
+    scene.next_slide()
+
+    _fallar(scene, figura, bola, diana)
+    _acertar(scene, figura, bola, diana, guia)
+    bolas = _malabares(scene, figura, bola)
+    _mirar_dentro(scene, bolas)

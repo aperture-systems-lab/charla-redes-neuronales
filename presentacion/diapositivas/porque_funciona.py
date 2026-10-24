@@ -85,41 +85,18 @@ def _neurona(centro, color):
     )
 
 
-def construir(scene):
-    encabezado = hacer_titulo("¿Por qué funciona?")
-    colores = _paleta(N_MAX)
+def _cable(desde, hasta, color):
+    direccion = hasta - desde
+    direccion = direccion / np.linalg.norm(direccion)
+    linea = Line(
+        desde + direccion * RADIO_EXTREMO,
+        hasta - direccion * LADO_NEURONA * 0.62,
+        color=color, stroke_width=1.3,
+    )
+    return linea.set_stroke(opacity=0.4)
 
-    centro_entrada = np.array([X_RED, Y_ENTRADA, 0.0])
-    centro_salida = np.array([X_RED, Y_SALIDA, 0.0])
-    entrada = _extremo(centro_entrada, PRIMARIO, "x")
-    salida = _extremo(centro_salida, AMBAR, "y")
 
-    posiciones = [
-        np.array([
-            X_RED - ANCHO_FILA / 2 + j * ANCHO_FILA / (N_MAX - 1), Y_FILA, 0.0,
-        ])
-        for j in range(N_MAX)
-    ]
-    neuronas = [_neurona(p, colores[j]) for j, p in enumerate(posiciones)]
-
-    def _cable(desde, hasta, color):
-        direccion = hasta - desde
-        direccion = direccion / np.linalg.norm(direccion)
-        linea = Line(
-            desde + direccion * RADIO_EXTREMO,
-            hasta - direccion * LADO_NEURONA * 0.62,
-            color=color, stroke_width=1.3,
-        )
-        return linea.set_stroke(opacity=0.4)
-
-    cables = [
-        VGroup(
-            _cable(centro_entrada, p, PRIMARIO),
-            _cable(centro_salida, p, AMBAR),
-        )
-        for p in posiciones
-    ]
-
+def _grafica():
     ejes = Axes(
         x_range=[0, 1, 0.25], y_range=[-1.35, 1.35, 0.5],
         x_length=5.5, y_length=3.9,
@@ -151,55 +128,33 @@ def construir(scene):
         Dot(ejes.c2p(x, _objetivo(x)), radius=0.045, color=VERDE)
         for x in np.linspace(0.02, 0.98, 22)
     ])
+    return ejes, marcas, rot_x, rot_y, objetivo, datos
 
-    def _ajuste(n):
-        nodos_x = np.linspace(0, 1, n + 1)
-        xs = np.linspace(0, 1, MUESTRAS + 1)
-        ys = np.interp(xs, nodos_x, _objetivo(nodos_x))
-        puntos = [ejes.c2p(x, y) for x, y in zip(xs, ys)]
 
-        por_banda = MUESTRAS // N_BANDAS
-        bandas = VGroup()
-        for j in range(N_BANDAS):
-            banda = VMobject(color=colores[j * 2], stroke_width=4.5)
-            banda.set_points_as_corners(
-                puntos[j * por_banda:(j + 1) * por_banda + 1]
-            )
-            bandas.add(banda)
-        return bandas
+def _ajuste(ejes, colores, n):
+    nodos_x = np.linspace(0, 1, n + 1)
+    xs = np.linspace(0, 1, MUESTRAS + 1)
+    ys = np.interp(xs, nodos_x, _objetivo(nodos_x))
+    puntos = [ejes.c2p(x, y) for x, y in zip(xs, ys)]
 
-    def _contador(n):
-        return texto(f"{n} neuronas", 24, color=colores[min(n, N_MAX) - 1])
+    por_banda = MUESTRAS // N_BANDAS
+    bandas = VGroup()
+    for j in range(N_BANDAS):
+        banda = VMobject(color=colores[j * 2], stroke_width=4.5)
+        banda.set_points_as_corners(
+            puntos[j * por_banda:(j + 1) * por_banda + 1]
+        )
+        bandas.add(banda)
+    return bandas
 
-    contador = _contador(len(PASOS[0])).move_to([X_RED, Y_CONTADOR, 0])
 
-    remate = VGroup(
-        separador(largo=1.15, grosor=2),
-        texto("Teorema de aproximación universal", 20, color=PRIMARIO),
-    ).arrange(DOWN, buff=0.24)
-    remate.move_to([CENTRO_GRAFICA[0], -2.45, 0])
+def _contador(colores, n):
+    contador = texto(f"{n} neuronas", 24, color=colores[min(n, N_MAX) - 1])
+    return contador.move_to([X_RED, Y_CONTADOR, 0])
 
-    scene.play(FadeIn(encabezado, shift=DOWN * 0.2), run_time=0.6)
-    scene.play(FadeIn(entrada), FadeIn(salida), run_time=0.6)
 
+def _crecer(scene, neuronas, cables, ajuste, contador, ejes, colores):
     visibles = list(PASOS[0])
-    scene.play(
-        LaggedStart(*[FadeIn(neuronas[j], scale=0.5) for j in visibles],
-                    lag_ratio=0.12),
-        LaggedStart(*[Create(cables[j]) for j in visibles], lag_ratio=0.12),
-        FadeIn(contador),
-        run_time=1.2,
-    )
-    scene.play(
-        Create(ejes), FadeIn(marcas), FadeIn(rot_x), FadeIn(rot_y),
-        run_time=0.8,
-    )
-    scene.play(Create(objetivo), FadeIn(datos, lag_ratio=0.05), run_time=1.1)
-
-    ajuste = _ajuste(len(visibles))
-    scene.play(Create(ajuste), run_time=0.8)
-    scene.next_slide()
-
     for paso in PASOS[1:]:
         nuevas = [j for j in paso if j not in visibles]
         visibles = list(paso)
@@ -207,24 +162,16 @@ def construir(scene):
             LaggedStart(*[FadeIn(neuronas[j], scale=0.4) for j in nuevas],
                         lag_ratio=0.05),
             LaggedStart(*[Create(cables[j]) for j in nuevas], lag_ratio=0.05),
-            Transform(ajuste, _ajuste(len(visibles))),
-            Transform(contador,
-                      _contador(len(visibles)).move_to([X_RED, Y_CONTADOR, 0])),
+            Transform(ajuste, _ajuste(ejes, colores, len(visibles))),
+            Transform(contador, _contador(colores, len(visibles))),
             run_time=1.3,
         )
 
-    scene.play(FadeIn(remate, shift=UP * 0.12), run_time=0.9)
-    scene.wait(0.5)
 
-    scene.next_slide()
-
+def _teorema(scene, diagrama):
     teorema = imagen("teorema_aproximacion_universal")
     teorema.scale_to_fit_width(ANCHO_TEOREMA).move_to([0, Y_TEOREMA, 0])
     marco_teorema = enmarcar(teorema, margen=0.16)
-    diagrama = VGroup(
-        entrada, salida, *neuronas, *cables, ejes, marcas, rot_x, rot_y,
-        objetivo, datos, ajuste, contador, remate,
-    )
     asustado = imagen("asustado").scale_to_fit_height(ALTO_ASUSTADO)
     asustado.next_to(marco_teorema, DOWN, buff=-SOLAPE_ASUSTADO)
     asustado.align_to(marco_teorema, RIGHT).shift(LEFT * MARGEN_ASUSTADO)
@@ -237,3 +184,69 @@ def construir(scene):
     scene.wait(0.3)
 
     scene.next_slide()
+
+
+def construir(scene):
+    encabezado = hacer_titulo("¿Por qué funciona?")
+    colores = _paleta(N_MAX)
+
+    centro_entrada = np.array([X_RED, Y_ENTRADA, 0.0])
+    centro_salida = np.array([X_RED, Y_SALIDA, 0.0])
+    entrada = _extremo(centro_entrada, PRIMARIO, "x")
+    salida = _extremo(centro_salida, AMBAR, "y")
+
+    posiciones = [
+        np.array([
+            X_RED - ANCHO_FILA / 2 + j * ANCHO_FILA / (N_MAX - 1), Y_FILA, 0.0,
+        ])
+        for j in range(N_MAX)
+    ]
+    neuronas = [_neurona(p, colores[j]) for j, p in enumerate(posiciones)]
+    cables = [
+        VGroup(
+            _cable(centro_entrada, p, PRIMARIO),
+            _cable(centro_salida, p, AMBAR),
+        )
+        for p in posiciones
+    ]
+
+    ejes, marcas, rot_x, rot_y, objetivo, datos = _grafica()
+    contador = _contador(colores, len(PASOS[0]))
+
+    remate = VGroup(
+        separador(largo=1.15, grosor=2),
+        texto("Teorema de aproximación universal", 20, color=PRIMARIO),
+    ).arrange(DOWN, buff=0.24)
+    remate.move_to([CENTRO_GRAFICA[0], -2.45, 0])
+
+    scene.play(FadeIn(encabezado, shift=DOWN * 0.2), run_time=0.6)
+    scene.play(FadeIn(entrada), FadeIn(salida), run_time=0.6)
+
+    scene.play(
+        LaggedStart(*[FadeIn(neuronas[j], scale=0.5) for j in PASOS[0]],
+                    lag_ratio=0.12),
+        LaggedStart(*[Create(cables[j]) for j in PASOS[0]], lag_ratio=0.12),
+        FadeIn(contador),
+        run_time=1.2,
+    )
+    scene.play(
+        Create(ejes), FadeIn(marcas), FadeIn(rot_x), FadeIn(rot_y),
+        run_time=0.8,
+    )
+    scene.play(Create(objetivo), FadeIn(datos, lag_ratio=0.05), run_time=1.1)
+
+    ajuste = _ajuste(ejes, colores, len(PASOS[0]))
+    scene.play(Create(ajuste), run_time=0.8)
+    scene.next_slide()
+
+    _crecer(scene, neuronas, cables, ajuste, contador, ejes, colores)
+
+    scene.play(FadeIn(remate, shift=UP * 0.12), run_time=0.9)
+    scene.wait(0.5)
+
+    scene.next_slide()
+
+    _teorema(scene, VGroup(
+        entrada, salida, *neuronas, *cables, ejes, marcas, rot_x, rot_y,
+        objetivo, datos, ajuste, contador, remate,
+    ))

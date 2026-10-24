@@ -190,9 +190,7 @@ def _flecha_eje(ejes, x0, hacia_arriba, color):
     )
 
 
-def construir(scene):
-    encabezado = hacer_titulo("Aprender es bajar al valle")
-
+def _diagrama(scene):
     red, centro_salida = _red_dibujo()
     rot_red = VGroup(
         texto("la red", 18, color=SECUNDARIO),
@@ -221,6 +219,27 @@ def construir(scene):
     rot_error = _rotulo("cuánto falla", X_ERROR, color=ROJO)
     flecha_error = _flecha(caja.get_right(), valor_error.get_left())
 
+    scene.play(FadeIn(red), FadeIn(rot_red), run_time=1.0)
+    scene.play(Create(flecha_salida), FadeIn(salida, shift=RIGHT * 0.2),
+               FadeIn(rot_salida), run_time=0.8)
+    scene.play(Create(flecha_caja), Create(caja), FadeIn(nombre_caja),
+               run_time=0.8)
+    scene.play(FadeIn(real, shift=DOWN * 0.15), FadeIn(rot_real),
+               Create(flecha_real), run_time=0.8)
+    scene.play(Create(flecha_error), FadeIn(valor_error, shift=RIGHT * 0.2),
+               FadeIn(rot_error), run_time=0.8)
+    scene.next_slide()
+
+    return (
+        VGroup(red, rot_red),
+        VGroup(flecha_salida, salida, rot_salida),
+        VGroup(flecha_caja, caja, nombre_caja),
+        VGroup(real, flecha_real, rot_real),
+        VGroup(flecha_error, valor_error, rot_error),
+    )
+
+
+def _compuesta():
     compuesta = MathTex(
         "L", "(", "w", ")", "=",
         "L", r"\big(", "f(x;", "w", ")", ",", "y", r"\big)",
@@ -233,14 +252,17 @@ def construir(scene):
         compuesta[i].set_color(PRIMARIO)
     for i in (10, 11):
         compuesta[i].set_color(CLARO)
+    return compuesta
 
-    morfos = (
-        (VGroup(red, rot_red), compuesta[7:10]),
-        (VGroup(flecha_salida, salida, rot_salida), compuesta[7:10]),
-        (VGroup(flecha_caja, caja, nombre_caja),
-         VGroup(compuesta[5], compuesta[6], compuesta[12])),
-        (VGroup(real, flecha_real, rot_real), compuesta[10:12]),
-        (VGroup(flecha_error, valor_error, rot_error), compuesta[0:5]),
+
+def _a_formula(scene, piezas):
+    compuesta = _compuesta()
+    destinos = (
+        compuesta[7:10],
+        compuesta[7:10],
+        VGroup(compuesta[5], compuesta[6], compuesta[12]),
+        compuesta[10:12],
+        compuesta[0:5],
     )
 
     simbolo_f = MathTex("f(x;", "w", ")")
@@ -255,6 +277,28 @@ def construir(scene):
     clave = texto("el error es una función de los pesos", 22, color=AMBAR)
     clave.move_to([0, -2.45, 0])
 
+    scene.play(*[Transform(a, b.copy()) for a, b in zip(piezas, destinos)],
+               run_time=1.5)
+    scene.remove(*piezas)
+    scene.add(compuesta)
+    scene.play(
+        LaggedStart(*[FadeIn(f, shift=RIGHT * 0.15) for f in leyenda],
+                    lag_ratio=0.18),
+        run_time=1.2,
+    )
+    scene.play(
+        FadeIn(clave, shift=UP * 0.1),
+        LaggedStart(*[Indicate(compuesta[i], color=CLARO, scale_factor=1.4)
+                      for i in (2, 8)], lag_ratio=0.3),
+        run_time=1.2,
+    )
+    scene.next_slide()
+
+    scene.play(FadeOut(compuesta), FadeOut(leyenda), FadeOut(clave),
+               run_time=0.7)
+
+
+def _paisaje(scene):
     ejes = Axes(
         x_range=[X_MIN, X_MAX, 1], y_range=[0, L_MAX, 1],
         x_length=ANCHO_PAISAJE, y_length=ALTO_PAISAJE,
@@ -284,55 +328,6 @@ def construir(scene):
         lambda: _liquido(ejes, _perdida(donde.get_value()))
     )
 
-    regla = MathTex(
-        "w", r"\leftarrow", "w", "-", r"\eta", r"\frac{dL}{dw}",
-    ).scale(0.95)
-    for i in (0, 2):
-        regla[i].set_color(AMBAR)
-    regla[3].set_color(VERDE)
-    regla[4].set_color(MORADO)
-    regla[5].set_color(VERDE)
-    glosa = VGroup(
-        MathTex(r"\eta", color=MORADO).scale(0.75),
-        texto("el tamaño del paso", 18, color=SECUNDARIO),
-    ).arrange(RIGHT, buff=0.22)
-    fila_regla = VGroup(regla, glosa).arrange(RIGHT, buff=0.9)
-    fila_regla.move_to([CENTRO_PAISAJE[0] + 0.6, -3.2, 0])
-
-    recorrido = [X_PARADA]
-    for _ in range(PASOS):
-        recorrido.append(recorrido[-1] - TASA * _derivada(recorrido[-1]))
-
-    scene.play(FadeIn(encabezado, shift=DOWN * 0.2), run_time=0.6)
-    scene.play(FadeIn(red), FadeIn(rot_red), run_time=1.0)
-    scene.play(Create(flecha_salida), FadeIn(salida, shift=RIGHT * 0.2),
-               FadeIn(rot_salida), run_time=0.8)
-    scene.play(Create(flecha_caja), Create(caja), FadeIn(nombre_caja),
-               run_time=0.8)
-    scene.play(FadeIn(real, shift=DOWN * 0.15), FadeIn(rot_real),
-               Create(flecha_real), run_time=0.8)
-    scene.play(Create(flecha_error), FadeIn(valor_error, shift=RIGHT * 0.2),
-               FadeIn(rot_error), run_time=0.8)
-    scene.next_slide()
-
-    scene.play(*[Transform(a, b.copy()) for a, b in morfos], run_time=1.5)
-    scene.remove(*[a for a, _ in morfos])
-    scene.add(compuesta)
-    scene.play(
-        LaggedStart(*[FadeIn(f, shift=RIGHT * 0.15) for f in leyenda],
-                    lag_ratio=0.18),
-        run_time=1.2,
-    )
-    scene.play(
-        FadeIn(clave, shift=UP * 0.1),
-        LaggedStart(*[Indicate(compuesta[i], color=CLARO, scale_factor=1.4)
-                      for i in (2, 8)], lag_ratio=0.3),
-        run_time=1.2,
-    )
-    scene.next_slide()
-
-    scene.play(FadeOut(compuesta), FadeOut(leyenda), FadeOut(clave),
-               run_time=0.7)
     scene.play(Create(ejes), FadeIn(rot_w), FadeIn(rot_L), run_time=0.8)
     scene.play(Create(valle), Create(tubo), FadeIn(rotulo_termo), run_time=1.3)
 
@@ -345,7 +340,10 @@ def construir(scene):
     scene.play(donde.animate.set_value(X_MAX - MARGEN), run_time=4.0,
                rate_func=linear)
     scene.next_slide()
+    return ejes, donde, tangente
 
+
+def _pendiente(scene, ejes, donde):
     scene.play(donde.animate.set_value(X_PARADA), run_time=0.9)
     flecha_sube = _flecha_eje(ejes, X_PARADA, True, ROJO)
     etiqueta_sube = MathTex(r"\frac{dL}{dw}", color=ROJO).scale(0.85)
@@ -362,18 +360,44 @@ def construir(scene):
         run_time=1.1,
     )
     scene.next_slide()
+    return flecha_sube, etiqueta_sube
+
+
+def _regla():
+    regla = MathTex(
+        "w", r"\leftarrow", "w", "-", r"\eta", r"\frac{dL}{dw}",
+    ).scale(0.95)
+    for i in (0, 2):
+        regla[i].set_color(AMBAR)
+    regla[3].set_color(VERDE)
+    regla[4].set_color(MORADO)
+    regla[5].set_color(VERDE)
+    glosa = VGroup(
+        MathTex(r"\eta", color=MORADO).scale(0.75),
+        texto("el tamaño del paso", 18, color=SECUNDARIO),
+    ).arrange(RIGHT, buff=0.22)
+    fila_regla = VGroup(regla, glosa).arrange(RIGHT, buff=0.9)
+    fila_regla.move_to([CENTRO_PAISAJE[0] + 0.6, -3.2, 0])
+    return regla, fila_regla
+
+
+def _descender(scene, ejes, donde, tangente, flecha, etiqueta):
+    regla, fila_regla = _regla()
+    recorrido = [X_PARADA]
+    for _ in range(PASOS):
+        recorrido.append(recorrido[-1] - TASA * _derivada(recorrido[-1]))
 
     tangente.clear_updaters()
     scene.play(
-        FadeOut(etiqueta_sube), FadeOut(tangente),
+        FadeOut(etiqueta), FadeOut(tangente),
         FadeIn(fila_regla, shift=UP * 0.12),
         run_time=0.9,
     )
 
     saltos = [_paso_eje(ejes, a, b) for a, b in zip(recorrido, recorrido[1:])]
-    scene.play(Transform(flecha_sube, saltos[0]), run_time=0.8)
+    scene.play(Transform(flecha, saltos[0]), run_time=0.8)
 
-    salto = flecha_sube
+    salto = flecha
     for i, x_siguiente in enumerate(recorrido[1:]):
         rastro = _punto(ejes, recorrido[i], radio=0.07)
         scene.add(rastro.set_opacity(0.35))
@@ -387,3 +411,14 @@ def construir(scene):
     scene.wait(0.3)
 
     scene.next_slide()
+
+
+def construir(scene):
+    encabezado = hacer_titulo("Aprender es bajar al valle")
+    scene.play(FadeIn(encabezado, shift=DOWN * 0.2), run_time=0.6)
+
+    piezas = _diagrama(scene)
+    _a_formula(scene, piezas)
+    ejes, donde, tangente = _paisaje(scene)
+    flecha, etiqueta = _pendiente(scene, ejes, donde)
+    _descender(scene, ejes, donde, tangente, flecha, etiqueta)

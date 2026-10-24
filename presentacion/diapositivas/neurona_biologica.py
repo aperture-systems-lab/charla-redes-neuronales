@@ -22,9 +22,10 @@ from manim import (
     linear,
 )
 
-from componentes import texto
+from animaciones import impulsos_al_azar
+from componentes import pares_cercanos, puntos_separados, texto
 from componentes import titulo as hacer_titulo
-from estilo import AMBAR, CLARO, PRIMARIO, SECUNDARIO, VERDE
+from estilo import AMBAR, PRIMARIO, SECUNDARIO, VERDE
 
 X_SOMA = -3.0
 Y_NEURONA = 0.0
@@ -158,20 +159,15 @@ def _celula_mini(rng, centro):
 
 def _campo(cantidad=34, semilla=17):
     rng = np.random.default_rng(semilla)
-    puntos = []
-    for _ in range(8000):
-        if len(puntos) == cantidad:
-            break
-        punto = np.array([rng.uniform(-6.1, 6.1), rng.uniform(-3.1, 2.05), 0.0])
-        if all(np.linalg.norm(punto - otro) > 1.05 for otro in puntos):
-            puntos.append(punto)
+    puntos = puntos_separados(
+        lambda: np.array([rng.uniform(-6.1, 6.1), rng.uniform(-3.1, 2.05), 0.0]),
+        cantidad, separacion=1.05, intentos=8000,
+    )
 
     conexiones = []
-    for i, uno in enumerate(puntos):
-        for otro in puntos[i + 1:]:
-            if np.linalg.norm(uno - otro) < 2.1:
-                medio = (uno + otro) / 2 + rng.uniform(-0.12, 0.12, 3) * [1, 1, 0]
-                conexiones.append(_curva([uno, medio, otro], 1.6, SECUNDARIO))
+    for uno, otro in pares_cercanos(puntos, 2.1):
+        medio = (uno + otro) / 2 + rng.uniform(-0.12, 0.12, 3) * [1, 1, 0]
+        conexiones.append(_curva([uno, medio, otro], 1.6, SECUNDARIO))
     hilos = VGroup(*conexiones).set_stroke(opacity=0.3)
     celulas = VGroup(*[_celula_mini(rng, p) for p in puntos])
     return celulas, hilos, conexiones
@@ -299,21 +295,8 @@ def construir(scene):
         run_time=1.6,
     )
 
-    rng = np.random.default_rng(9)
-    for _ in range(2):
-        elegidas = rng.choice(len(conexiones), size=12, replace=False)
-        impulsos = [
-            Dot(color=CLARO, radius=0.06).move_to(conexiones[k].get_start())
-            for k in elegidas
-        ]
-        scene.play(
-            LaggedStart(*[
-                MoveAlongPath(punto, conexiones[k], rate_func=linear)
-                for punto, k in zip(impulsos, elegidas)
-            ], lag_ratio=0.2),
-            run_time=1.7,
-        )
-        scene.play(*[FadeOut(p, scale=0.1) for p in impulsos], run_time=0.3)
+    impulsos_al_azar(scene, conexiones, semilla=9, cantidad=12, lag_ratio=0.2,
+                     run_time=1.7)
     scene.wait(0.4)
 
     scene.next_slide()

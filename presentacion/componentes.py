@@ -53,6 +53,26 @@ PRESETS_RED = (
 )
 
 
+def puntos_separados(sortear, cantidad, separacion, intentos):
+    puntos = []
+    for _ in range(intentos):
+        if len(puntos) == cantidad:
+            break
+        punto = sortear()
+        if all(np.linalg.norm(punto - otro) > separacion for otro in puntos):
+            puntos.append(punto)
+    return puntos
+
+
+def pares_cercanos(puntos, alcance):
+    return [
+        (uno, otro)
+        for i, uno in enumerate(puntos)
+        for otro in puntos[i + 1:]
+        if np.linalg.norm(uno - otro) < alcance
+    ]
+
+
 def red_decorativa(indice=0):
     n, alcance, semilla, color, opacidad, radio = PRESETS_RED[indice % len(PRESETS_RED)]
     rng = np.random.default_rng(semilla)
@@ -61,13 +81,10 @@ def red_decorativa(indice=0):
         rng.uniform(-w, w, n), rng.uniform(-h, h, n), np.zeros(n),
     ])
     grupo = VGroup()
-    for i in range(n):
-        for j in range(i + 1, n):
-            if np.linalg.norm(puntos[i] - puntos[j]) < alcance:
-                grupo.add(Line(
-                    puntos[i], puntos[j],
-                    color=color, stroke_width=1.0, stroke_opacity=opacidad,
-                ))
+    for uno, otro in pares_cercanos(puntos, alcance):
+        grupo.add(Line(
+            uno, otro, color=color, stroke_width=1.0, stroke_opacity=opacidad,
+        ))
     for p in puntos:
         grupo.add(Dot(p, radius=radio, color=color, fill_opacity=opacidad * 2.2))
     return grupo

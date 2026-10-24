@@ -85,6 +85,21 @@ def _bars(ax, results):
     ax.grid(axis="y", visible=False)
 
 
+MEANINGS = [["VN", "FP"],
+            ["FN", "VP"]]
+
+
+def _cell_labels(ax, counts, largest):
+    """Cada casilla con su cuenta y, debajo, lo que significa (VN, FP, FN o VP)."""
+    for r, row in enumerate(counts):
+        for c, count in enumerate(row):
+            # Sobre una casilla clara el texto oscuro se lee mejor.
+            ink = BACKGROUND if count > 0.6 * largest else LIGHT
+            ax.text(c, r - 0.1, count, color=ink, ha="center", va="center", fontsize=18)
+            ax.text(c, r + 0.22, MEANINGS[r][c], color=ink, ha="center", va="center",
+                    fontsize=11, alpha=0.75)
+
+
 def _matrix(ax, matrix):
     """La matriz de confusión: filas lo que pasó, columnas lo que dijo el modelo."""
     ax.set_title("Matriz de confusión")
@@ -92,22 +107,8 @@ def _matrix(ax, matrix):
     largest = max(max(row) for row in counts) or 1
 
     ax.imshow(counts, cmap=RAMP, vmin=0, vmax=largest)
-
-    meanings = [["VN", "FP"],
-                ["FN", "VP"]]
-    for r, row in enumerate(counts):
-        for c, count in enumerate(row):
-            # Sobre una casilla clara el texto oscuro se lee mejor.
-            ink = BACKGROUND if count > 0.6 * largest else LIGHT
-            ax.text(c, r - 0.1, count, color=ink, ha="center", va="center", fontsize=18)
-            ax.text(c, r + 0.22, meanings[r][c], color=ink, ha="center", va="center",
-                    fontsize=11, alpha=0.75)
-
-    ax.set_xticks([])
-    ax.set_yticks([])
-    ax.grid(visible=False)
-    for spine in ax.spines.values():
-        spine.set_visible(False)
+    _cell_labels(ax, counts, largest)
+    _frame(ax)
 
     # Una ranura del color del fondo entre casilla y casilla.
     ax.set_xticks([0.5], minor=True)

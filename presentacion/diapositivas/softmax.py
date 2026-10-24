@@ -105,35 +105,23 @@ def _euler(exponenciales):
     return ejes, VGroup(curva, etiqueta), marcas
 
 
-def construir(scene):
-    encabezado = hacer_titulo("Softmax")
+def _fila(sumandos, total_mob):
+    piezas, cruces = [], []
+    for i, sumando in enumerate(sumandos):
+        if i:
+            mas = MathTex("+", color=SECUNDARIO).scale(0.85)
+            piezas.append(mas)
+            cruces.append(mas)
+        piezas.append(sumando)
+    cierre = VGroup(
+        MathTex("=", color=SECUNDARIO).scale(0.85), total_mob,
+    ).arrange(RIGHT, buff=0.26)
+    piezas.append(cierre)
+    fila = VGroup(*piezas).arrange(RIGHT, buff=0.26)
+    return fila.move_to([0, Y_BASE - 1.15, 0]), sumandos, cruces, cierre
 
-    exponenciales = [float(np.exp(s)) for s in PUNTUACIONES]
-    total = sum(exponenciales)
-    probabilidades = [e / total for e in exponenciales]
-    porcentajes = [p * 100 for p in probabilidades]
 
-    suelo = Line(
-        [_xs()[0] - 0.9, Y_BASE, 0], [_xs()[-1] + 0.9, Y_BASE, 0],
-        color=SECUNDARIO, stroke_width=2, stroke_opacity=0.55,
-    )
-    cabeceras = VGroup(*[
-        texto(nombre, 20, color=SECUNDARIO).move_to([x, Y_CABECERA, 0])
-        for nombre, x in zip(CLASES, _xs())
-    ])
-
-    barras = _barras(PUNTUACIONES, PRIMARIO)
-    etiquetas = _valores(PUNTUACIONES, PRIMARIO, formato="{:.1f}")
-    panel = (suelo, cabeceras, barras, etiquetas)
-
-    general = VGroup(
-        MathTex(r"\mathrm{softmax}(\mathbf{z})_i", "=", color=CLARO),
-        _fraccion(
-            MathTex("e^{z_i}", color=AMBAR),
-            MathTex(r"\sum_{j=1}^{N} e^{z_j}", color=VERDE),
-        ),
-    ).arrange(RIGHT, buff=0.3).scale(1.15).move_to([0, 0.65, 0])
-
+def _leyenda():
     entradas = (
         (r"\mathbf{z}", CLARO, "los outputs de la red"),
         ("z_i", AMBAR, "el output de la clase que miramos"),
@@ -148,41 +136,20 @@ def construir(scene):
                 np.array([-1.55, y, 0]), RIGHT, buff=0,
             ),
         )
+    return leyenda
 
-    def _fila(sumandos, total_mob):
-        piezas, cruces = [], []
-        for i, sumando in enumerate(sumandos):
-            if i:
-                mas = MathTex("+", color=SECUNDARIO).scale(0.85)
-                piezas.append(mas)
-                cruces.append(mas)
-            piezas.append(sumando)
-        cierre = VGroup(
-            MathTex("=", color=SECUNDARIO).scale(0.85), total_mob,
-        ).arrange(RIGHT, buff=0.26)
-        piezas.append(cierre)
-        fila = VGroup(*piezas).arrange(RIGHT, buff=0.26)
-        return fila.move_to([0, Y_BASE - 1.15, 0]), sumandos, cruces, cierre
 
-    fila_exp, sumandos, cruces, cierre_exp = _fila(
-        [texto(f"{e:.2f}", 26, color=AMBAR) for e in exponenciales],
-        texto(f"{total:.2f}", 30, color=CLARO),
+def _puntuaciones(scene):
+    suelo = Line(
+        [_xs()[0] - 0.9, Y_BASE, 0], [_xs()[-1] + 0.9, Y_BASE, 0],
+        color=SECUNDARIO, stroke_width=2, stroke_opacity=0.55,
     )
-    fila_div, _, _, _ = _fila(
-        [MathTex(rf"\frac{{{e:.2f}}}{{{total:.2f}}}", color=AMBAR).scale(0.85)
-         for e in exponenciales],
-        MathTex(rf"\frac{{{total:.2f}}}{{{total:.2f}}}", color=CLARO).scale(0.85),
-    )
-    fila_uno, _, _, _ = _fila(
-        [texto(f"{p:.2f}", 26, color=VERDE) for p in probabilidades],
-        texto("1", 30, color=CLARO),
-    )
-    fila_pct, _, _, _ = _fila(
-        [texto(f"{p:.0f}%", 26, color=VERDE) for p in porcentajes],
-        texto(f"{sum(porcentajes):.0f}%", 30, color=CLARO),
-    )
-
-    scene.play(FadeIn(encabezado, shift=DOWN * 0.2), run_time=0.6)
+    cabeceras = VGroup(*[
+        texto(nombre, 20, color=SECUNDARIO).move_to([x, Y_CABECERA, 0])
+        for nombre, x in zip(CLASES, _xs())
+    ])
+    barras = _barras(PUNTUACIONES, PRIMARIO)
+    etiquetas = _valores(PUNTUACIONES, PRIMARIO, formato="{:.1f}")
 
     scene.play(Create(suelo), FadeIn(cabeceras), run_time=0.7)
     scene.play(
@@ -192,6 +159,18 @@ def construir(scene):
         run_time=1.1,
     )
     scene.next_slide()
+    return suelo, cabeceras, barras, etiquetas
+
+
+def _formula(scene, panel):
+    general = VGroup(
+        MathTex(r"\mathrm{softmax}(\mathbf{z})_i", "=", color=CLARO),
+        _fraccion(
+            MathTex("e^{z_i}", color=AMBAR),
+            MathTex(r"\sum_{j=1}^{N} e^{z_j}", color=VERDE),
+        ),
+    ).arrange(RIGHT, buff=0.3).scale(1.15).move_to([0, 0.65, 0])
+    leyenda = _leyenda()
 
     scene.play(*[FadeOut(p) for p in panel], run_time=0.7)
     scene.play(FadeIn(general, shift=UP * 0.15), run_time=0.9)
@@ -201,7 +180,10 @@ def construir(scene):
         run_time=1.3,
     )
     scene.next_slide()
+    return general, leyenda
 
+
+def _exponencial(scene, general, leyenda, exponenciales):
     ejes, curva, marcas = _euler(exponenciales)
     scene.play(FadeOut(general), FadeOut(leyenda), run_time=0.6)
     scene.play(Create(ejes), run_time=0.7)
@@ -212,9 +194,18 @@ def construir(scene):
         run_time=1.2,
     )
     scene.next_slide()
+    return ejes, curva, marcas
+
+
+def _sumar(scene, panel, euler, exponenciales):
+    _, _, barras, etiquetas = panel
+    fila, sumandos, cruces, cierre = _fila(
+        [texto(f"{e:.2f}", 26, color=AMBAR) for e in exponenciales],
+        texto(f"{sum(exponenciales):.2f}", 30, color=CLARO),
+    )
 
     scene.play(
-        FadeOut(ejes), FadeOut(curva), FadeOut(marcas),
+        *[FadeOut(m) for m in euler],
         *[FadeIn(p) for p in panel],
         run_time=0.85,
     )
@@ -232,16 +223,36 @@ def construir(scene):
         LaggedStart(*[FadeIn(c) for c in cruces], lag_ratio=0.15),
         run_time=0.5,
     )
-    scene.play(FadeIn(cierre_exp, shift=RIGHT * 0.2), run_time=0.8)
+    scene.play(FadeIn(cierre, shift=RIGHT * 0.2), run_time=0.8)
     scene.next_slide()
+    return fila, cierre
 
-    scene.play(Indicate(cierre_exp, color=VERDE, scale_factor=1.15),
+
+def _dividir(scene, panel, fila, cierre, exponenciales, probabilidades,
+             porcentajes):
+    _, _, barras, etiquetas = panel
+    total = sum(exponenciales)
+    fila_div, _, _, _ = _fila(
+        [MathTex(rf"\frac{{{e:.2f}}}{{{total:.2f}}}", color=AMBAR).scale(0.85)
+         for e in exponenciales],
+        MathTex(rf"\frac{{{total:.2f}}}{{{total:.2f}}}", color=CLARO).scale(0.85),
+    )
+    fila_uno, _, _, _ = _fila(
+        [texto(f"{p:.2f}", 26, color=VERDE) for p in probabilidades],
+        texto("1", 30, color=CLARO),
+    )
+    fila_pct, _, _, _ = _fila(
+        [texto(f"{p:.0f}%", 26, color=VERDE) for p in porcentajes],
+        texto(f"{sum(porcentajes):.0f}%", 30, color=CLARO),
+    )
+
+    scene.play(Indicate(cierre, color=VERDE, scale_factor=1.15),
                run_time=0.7)
-    scene.play(Transform(fila_exp, fila_div), run_time=1.3)
+    scene.play(Transform(fila, fila_div), run_time=1.3)
     scene.next_slide()
 
     scene.play(
-        Transform(fila_exp, fila_uno),
+        Transform(fila, fila_uno),
         Transform(barras, _barras(probabilidades, VERDE)),
         Transform(etiquetas, _valores(probabilidades, VERDE)),
         run_time=1.3,
@@ -249,12 +260,15 @@ def construir(scene):
     scene.next_slide()
 
     scene.play(
-        Transform(fila_exp, fila_pct),
+        Transform(fila, fila_pct),
         Transform(etiquetas, _valores(porcentajes, VERDE, formato="{:.0f}%")),
         run_time=1.2,
     )
     scene.next_slide()
 
+
+def _ganadora(scene, panel, probabilidades):
+    _, cabeceras, barras, etiquetas = panel
     ganadora = max(range(len(CLASES)), key=lambda i: probabilidades[i])
     resto = [i for i in range(len(CLASES)) if i != ganadora]
     scene.play(
@@ -275,3 +289,21 @@ def construir(scene):
     scene.wait(0.4)
 
     scene.next_slide()
+
+
+def construir(scene):
+    encabezado = hacer_titulo("Softmax")
+
+    exponenciales = [float(np.exp(s)) for s in PUNTUACIONES]
+    total = sum(exponenciales)
+    probabilidades = [e / total for e in exponenciales]
+    porcentajes = [p * 100 for p in probabilidades]
+
+    scene.play(FadeIn(encabezado, shift=DOWN * 0.2), run_time=0.6)
+    panel = _puntuaciones(scene)
+    general, leyenda = _formula(scene, panel)
+    euler = _exponencial(scene, general, leyenda, exponenciales)
+    fila, cierre = _sumar(scene, panel, euler, exponenciales)
+    _dividir(scene, panel, fila, cierre, exponenciales, probabilidades,
+             porcentajes)
+    _ganadora(scene, panel, probabilidades)

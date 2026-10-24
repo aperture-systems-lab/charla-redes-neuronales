@@ -125,9 +125,7 @@ def _cadena(destino, salida, n_llega, n_local, resultado):
     return formula
 
 
-def construir(scene):
-    encabezado = hacer_titulo("Un ejemplo sencillo")
-
+def _grafo():
     nodos = {
         nombre: _nodo(nombre, dato, _pos(*celda))
         for nombre, (dato, celda) in VALORES.items()
@@ -143,8 +141,23 @@ def construir(scene):
         fin = nodos[salida][0].get_left()
         salientes.append(_flecha(_desde(op, fin), fin))
         ops.append(op)
+    return nodos, huecos, ops, entrantes, salientes
 
-    scene.play(FadeIn(encabezado, shift=DOWN * 0.2), run_time=0.6)
+
+def _operar(scene, flechas, op, saliente, resultado):
+    scene.play(*[Create(f) for f in flechas], FadeIn(op, scale=0.6),
+               run_time=0.5)
+    viajes = [_viaje(f) for f in flechas]
+    scene.play(*[m for _, m in viajes], run_time=0.45)
+    scene.remove(*[p for p, _ in viajes])
+    punto, movimiento = _viaje(saliente)
+    scene.play(_backprop.pulso(op[0], VERDE), Create(saliente),
+               movimiento, run_time=0.45)
+    scene.remove(punto)
+    scene.play(FadeIn(resultado, shift=RIGHT * 0.15), run_time=0.5)
+
+
+def _hacia_adelante(scene, nodos, ops, entrantes, salientes):
     scene.play(
         LaggedStart(*[FadeIn(nodos[h], shift=RIGHT * 0.2) for h in HOJAS],
                     lag_ratio=0.15),
@@ -154,17 +167,16 @@ def construir(scene):
         OPERACIONES, ops, salientes,
     ):
         flechas = [entrantes[n] for n in entradas]
-        scene.play(*[Create(f) for f in flechas], FadeIn(op, scale=0.6),
-                   run_time=0.5)
-        viajes = [_viaje(f) for f in flechas]
-        scene.play(*[m for _, m in viajes], run_time=0.45)
-        scene.remove(*[p for p, _ in viajes])
-        punto, movimiento = _viaje(saliente)
-        scene.play(_backprop.pulso(op[0], VERDE), Create(saliente),
-                   movimiento, run_time=0.45)
-        scene.remove(punto)
-        scene.play(FadeIn(nodos[salida], shift=RIGHT * 0.15), run_time=0.5)
+        _operar(scene, flechas, op, saliente, nodos[salida])
     scene.next_slide()
+
+
+def construir(scene):
+    encabezado = hacer_titulo("Un ejemplo sencillo")
+    nodos, huecos, ops, entrantes, salientes = _grafo()
+
+    scene.play(FadeIn(encabezado, shift=DOWN * 0.2), run_time=0.6)
+    _hacia_adelante(scene, nodos, ops, entrantes, salientes)
 
     funcion = MathTex(r"L = (a \cdot b + c) \cdot f", color=CLARO).scale(0.85)
     funcion.move_to([0, Y_TEXTO, 0])
